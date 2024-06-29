@@ -6,7 +6,6 @@ import 'package:iconify_flutter/icons/material_symbols.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
-import '/datas/calculate.dart';
 import '/widgets/my_button.dart';
 import '/widgets/my_input.dart';
 
@@ -41,12 +40,9 @@ class _HomePageState extends State<HomePage> {
 
   // Validamos que todos los inputs contenga algun valor
   bool _validateInputs() {
-    return double.tryParse(_pc1.text) != null &&
-        double.tryParse(_pc2.text) != null &&
-        double.tryParse(_pc3.text) != null &&
-        double.tryParse(_pc4.text) != null &&
-        double.tryParse(_final.text) != null &&
-        double.tryParse(_parcial.text) != null;
+    return [_pc1, _pc2, _pc3, _pc4, _final, _parcial].every((controller) {
+      return double.tryParse(controller.text) != null;
+    });
   }
 
   // Calculamos la nota final con la logica
@@ -64,112 +60,96 @@ class _HomePageState extends State<HomePage> {
   // Calculamos las notas ya con los modales
   void _calculateNotes() {
     if (!_validateInputs()) {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            backgroundColor: Colors.white,
-            title: const Text(
-              '¡Error!',
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            content: const Text(
-              'Por favor, rellena todos los campos',
-              style: TextStyle(color: Colors.black, fontSize: 16.0),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Aceptar',
-                  style: TextStyle(color: Colors.black),
-                ),
-              ),
-            ],
-          );
-        },
-      );
+      _showErrorDialog(
+          context, '¡Error!', 'Por favor, rellena todos los campos');
       return;
     }
-
     double totalPromedio = _calculateFinalGrade();
     double notaAprobatoria = 10.5;
 
+    _showResultDialog(context, totalPromedio, totalPromedio >= notaAprobatoria);
+
+    setState(() {
+      total = totalPromedio;
+    });
+  }
+
+  void _showResultDialog(
+      BuildContext context, double totalPromedio, bool isApproved) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: Container(
             alignment: Alignment.center,
-            child: totalPromedio >= notaAprobatoria
-                ? Lottie.asset(
-                    'assets/lottie/check.json',
-                    fit: BoxFit.fitHeight,
-                    height: 200,
-                    width: 200,
-                  )
-                : Lottie.asset(
-                    'assets/lottie/wrong.json',
-                    fit: BoxFit.fitHeight,
-                    height: 200,
-                    width: 200,
-                  ),
+            child: Lottie.asset(
+              isApproved
+                  ? 'assets/lottie/check.json'
+                  : 'assets/lottie/wrong.json',
+              fit: BoxFit.fitHeight,
+              height: 200,
+              width: 200,
+            ),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              totalPromedio >= notaAprobatoria
-                  ? Text(
-                      'Aprobaste',
-                      style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.withAlpha(200)),
-                    )
-                  : Text(
-                      'Desaprobaste',
-                      style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red.withAlpha(200)),
-                    ),
               Text(
-                totalPromedio.toStringAsFixed(2),
-                style: const TextStyle(fontSize: 20),
-              )
+                isApproved ? 'Aprobaste' : 'Desaprobaste',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: isApproved
+                      ? Colors.green.withAlpha(200)
+                      : Colors.red.withAlpha(200),
+                ),
+              ),
+              Text(totalPromedio.toStringAsFixed(2),
+                  style: const TextStyle(fontSize: 20)),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Aceptar',
-                style: TextStyle(color: Colors.black),
-              ),
+              child:
+                  const Text('Aceptar', style: TextStyle(color: Colors.black)),
             ),
           ],
         );
       },
     );
+  }
 
-    total = totalPromedio;
-    FocusManager.instance.primaryFocus?.unfocus();
+  void _showErrorDialog(BuildContext context, String title, String content) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text(title,
+              style: const TextStyle(
+                  color: Colors.red, fontWeight: FontWeight.bold)),
+          content: Text(content,
+              style: const TextStyle(color: Colors.black, fontSize: 16.0)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child:
+                  const Text('Aceptar', style: TextStyle(color: Colors.black)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _clearNotes() {
-    _pc1.clear();
-    _pc2.clear();
-    _pc3.clear();
-    _pc4.clear();
-    _final.clear();
-    _parcial.clear();
+    for (var controller in [_pc1, _pc2, _pc3, _pc4, _final, _parcial]) {
+      controller.clear();
+    }
     setState(() {
       total = 0.0;
     });
-    FocusManager.instance.primaryFocus?.unfocus();
   }
 
   void showModal({String? textPc}) {
@@ -259,9 +239,7 @@ class _HomePageState extends State<HomePage> {
                   textPc: 'PC1',
                   controller: _pc1,
                   onPressed: () {
-                    showModal(
-                      textPc: 'PC1',
-                    );
+                    showModal(textPc: 'PC1');
                   },
                 ),
                 const Gap(10),
@@ -269,9 +247,7 @@ class _HomePageState extends State<HomePage> {
                   textPc: 'PC2',
                   controller: _pc2,
                   onPressed: () {
-                    showModal(
-                      textPc: 'PC2',
-                    );
+                    showModal(textPc: 'PC2');
                   },
                 ),
                 const Gap(10),
@@ -279,9 +255,7 @@ class _HomePageState extends State<HomePage> {
                   textPc: 'PC3',
                   controller: _pc3,
                   onPressed: () {
-                    showModal(
-                      textPc: 'PC3',
-                    );
+                    showModal(textPc: 'PC3');
                   },
                 ),
                 const Gap(10),
@@ -325,34 +299,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       MyButton(
                         text: 'Notas faltantes',
-                        onPressed: () {
-                          Calculate calculate = Calculate();
-                          double finalGrade = calculate.calculateNote(
-                            double.tryParse(_pc1.text) ?? 0.0,
-                            double.tryParse(_pc2.text) ?? 0.0,
-                            double.tryParse(_pc3.text) ?? 0.0,
-                            double.tryParse(_pc4.text) ?? 0.0,
-                            double.tryParse(_final.text) ?? 0.0,
-                            double.tryParse(_parcial.text) ?? 0.0,
-                          );
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: const Text('Resultado'),
-                                content: Text('La nota final es: $finalGrade'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: const Text('Cerrar'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
+                        onPressed: () {},
                       ),
                     ],
                   ),
